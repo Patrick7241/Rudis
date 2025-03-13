@@ -9,6 +9,15 @@ use tokio::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use config::reader::reader;
 use operations::string::ops::{handle_set_command,handle_del_command, handle_get_command};
+use operations::hash::ops::{handle_hset_command};
+use crate::operations::hash::ops::{handle_hdel_command, handle_hget_command, handle_hgetall_command};
+
+#[derive(Clone)]
+struct Storage{
+    string_storage:Arc<Mutex<HashMap<String, String>>>,
+    hash_storage:Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -32,23 +41,32 @@ async fn main() {
     info!("初始化日志库成功");
 
     let listener = tokio::net::TcpListener::bind(config.rudis.address).await.unwrap();
-    let hash_table: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    //  string类型存储
+    let hash_table_string: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+    // hash类型存储
+    let hash_table_hash: Arc<Mutex<HashMap<String, HashMap<String, String>>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    let storage = Storage{
+        string_storage:hash_table_string,
+        hash_storage:hash_table_hash,
+    };
+
 
     loop {
         let (mut socket, addr) = listener.accept().await.unwrap();
         info!("接受 {} 地址的连接", addr);
 
-        // 克隆 Arc 传入 tokio::spawn 线程
-        let hash_table = Arc::clone(&hash_table);
+        let storage = storage.clone();
 
         tokio::spawn(async move {
-            handle_client(&mut socket, hash_table).await;
+            handle_client(&mut socket, storage).await;
         });
     }
 }
 
 // 处理客户端连接的逻辑
-async fn handle_client(socket: &mut tokio::net::TcpStream, hash_table: Arc<Mutex<HashMap<String, String>>>) {
+async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
     loop {
         let mut buffer = [0; 1024];
         match socket.read(&mut buffer).await {
@@ -65,10 +83,17 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, hash_table: Arc<Mutex
 
 
                 match parts.get(0) {
-                    Some(&"set") => handle_set_command(parts, socket, hash_table.clone()).await,
-                    Some(&"get") => handle_get_command(parts, socket, hash_table.clone()).await,
-                    Some(&"del")=> handle_del_command(parts, socket, hash_table.clone()).await,
-                    _ => {
+                    // string类型
+                    Some(&"set") => handle_set_command(parts, socket, storage.string_storage.clone()).await,
+                    Some(&"get") => handle_get_command(parts, socket,storage.string_storage.clone()).await,
+                    Some(&"del")=> handle_del_command(parts, socket, storage.string_storage.clone()).await,
+
+                    // hash类型
+                    Some(&"hset")=> handle_hset_command(parts, socket, storage.hash_storage.clone()).await,
+                    Some(&"hget")=> handle_hget_command(parts, socket, storage.hash_storage.clone()).await,
+                    Some(&"hdel")=> handle_hdel_command(parts, socket, storage.hash_storage.clone()).await,
+                    Some(&"hgetall")=>handle_hgetall_command(parts, socket, storage.hash_storage.clone()).await,
+                   _ => {
                         error!("未定义的指令类型");
                         let response = "未定义的指令类型";
                         socket.write_all(response.as_bytes()).await.unwrap();
