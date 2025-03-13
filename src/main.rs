@@ -64,6 +64,7 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, hash_table: Arc<Mutex
                 match parts.get(0) {
                     Some(&"set") => handle_set_command(parts, socket, hash_table.clone()).await,
                     Some(&"get") => handle_get_command(parts, socket, hash_table.clone()).await,
+                    Some(&"del")=> handle_del_command(parts, socket, hash_table.clone()).await,
                     _ => {
                         error!("未定义的指令类型");
                         let response = "未定义的指令类型";
@@ -107,6 +108,29 @@ async fn handle_get_command(parts: Vec<&str>, socket: &mut tokio::net::TcpStream
 
     let lock_hash = hash_table.lock().await;
     let value = match lock_hash.get(key) {
+        Some(v) => v,
+        None => {
+            error!("未找到key");
+            socket.write_all("未找到key".as_bytes()).await.unwrap();
+            return;
+        }
+    };
+
+    socket.write_all(value.as_bytes()).await.unwrap();
+}
+
+// 处理 DEL 命令
+async fn handle_del_command(parts: Vec<&str>, socket: &mut tokio::net::TcpStream, hash_table: Arc<Mutex<HashMap<String, String>>>) {
+    if parts.len() != 2 {
+        error!("命令格式不符合！");
+        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        return;
+    }
+
+    let key = parts[1].trim_end_matches('\0');
+
+    let mut  lock_hash = hash_table.lock().await;
+    let value = match lock_hash.remove(key) {
         Some(v) => v,
         None => {
             error!("未找到key");

@@ -6,7 +6,7 @@ use std::io::{self, Write};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 连接到服务器
     let mut stream = TcpStream::connect("127.0.0.1:6666").await?;
-    println!("Connected to server.");
+    println!("连接到127.0.0.1:6666");
 
     loop {
         // 从用户输入读取命令
@@ -20,12 +20,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // 如果用户输入 "exit"，则退出
         if command.to_lowercase() == "exit" {
-            println!("Exiting...");
+            println!("正在退出...");
             break;
         }
-
-        println!("command 是: {}", command);
-
 
         // 发送命令到服务器
         stream.write_all(command.as_bytes()).await?;
@@ -35,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let n = stream.read(&mut buffer).await?;
         if n > 0 {
             let response = String::from_utf8_lossy(&buffer[..n]);
-            println!("Received from server: {}", response);
+            println!("服务器的回复: {}", response);
         }
     }
 
