@@ -2,20 +2,21 @@ mod config;
 mod log;
 mod operations;
 
-use std::collections::HashMap;
+use std::collections::{HashMap,VecDeque};
 use std::sync::Arc;
 use ::log::{error, info};
 use tokio::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use config::reader::reader;
 use operations::string::ops::{handle_set_command,handle_del_command, handle_get_command};
-use operations::hash::ops::{handle_hset_command};
-use crate::operations::hash::ops::{handle_hdel_command, handle_hget_command, handle_hgetall_command};
+use operations::hash::ops::{handle_hset_command,handle_hdel_command, handle_hget_command, handle_hgetall_command};
+use operations::list::ops::{handle_lpush_command,handle_rpush_command,handle_lpop_command,handle_rpop_command,handle_lrange_command};
 
 #[derive(Clone)]
 struct Storage{
     string_storage:Arc<Mutex<HashMap<String, String>>>,
     hash_storage:Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
+    list_storage:Arc<Mutex<HashMap<String,VecDeque<String>>>>,
 }
 
 
@@ -46,10 +47,13 @@ async fn main() {
     let hash_table_string: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
     // hash类型存储
     let hash_table_hash: Arc<Mutex<HashMap<String, HashMap<String, String>>>> = Arc::new(Mutex::new(HashMap::new()));
+    // list类型存储
+    let hash_table_list: Arc<Mutex<HashMap<String,VecDeque<String>>>> = Arc::new(Mutex::new(HashMap::new()));
 
     let storage = Storage{
         string_storage:hash_table_string,
         hash_storage:hash_table_hash,
+        list_storage:hash_table_list,
     };
 
 
@@ -93,6 +97,13 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
                     Some(&"hget")=> handle_hget_command(parts, socket, storage.hash_storage.clone()).await,
                     Some(&"hdel")=> handle_hdel_command(parts, socket, storage.hash_storage.clone()).await,
                     Some(&"hgetall")=>handle_hgetall_command(parts, socket, storage.hash_storage.clone()).await,
+
+                    // list类型
+                    Some(&"lpush")=>handle_lpush_command(parts,socket,storage.list_storage.clone()).await,
+                    Some(&"rpush")=>handle_rpush_command(parts,socket,storage.list_storage.clone()).await,
+                    Some(&"lpop")=>handle_lpop_command(parts,socket,storage.list_storage.clone()).await,
+                    Some(&"rpop")=>handle_rpop_command(parts,socket,storage.list_storage.clone()).await,
+                    Some(&"lrange")=>handle_lrange_command(parts,socket,storage.list_storage.clone()).await,
                    _ => {
                         error!("未定义的指令类型");
                         let response = "未定义的指令类型";
