@@ -1,6 +1,6 @@
+use log::error;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use log::error;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
@@ -8,11 +8,14 @@ use tokio::sync::Mutex;
 pub async fn handle_lpush_command(
     parts: Vec<&str>,
     socket: &mut tokio::net::TcpStream,
-    hash_table: Arc<Mutex<HashMap<String,VecDeque<String>>>>,
+    hash_table: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
 ) {
     if parts.len() < 3 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
     let key = parts[1].trim_end_matches('\0').to_string();
@@ -24,9 +27,12 @@ pub async fn handle_lpush_command(
         }
     } else {
         // 如果不存在创建一个新的
-        lock_hash.insert(key.clone(),VecDeque::new());
+        lock_hash.insert(key.clone(), VecDeque::new());
         for i in 2..parts.len() {
-            lock_hash.get_mut(&key).unwrap().push_front(parts[i].trim_end_matches('\0').to_string());
+            lock_hash
+                .get_mut(&key)
+                .unwrap()
+                .push_front(parts[i].trim_end_matches('\0').to_string());
         }
     }
     socket.write_all("ok".as_bytes()).await.unwrap();
@@ -36,11 +42,14 @@ pub async fn handle_lpush_command(
 pub async fn handle_rpush_command(
     parts: Vec<&str>,
     socket: &mut tokio::net::TcpStream,
-    hash_table: Arc<Mutex<HashMap<String,VecDeque<String>>>>,
+    hash_table: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
 ) {
     if parts.len() < 3 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
     let key = parts[1].trim_end_matches('\0').to_string();
@@ -52,9 +61,12 @@ pub async fn handle_rpush_command(
         }
     } else {
         // 如果不存在创建一个新的
-        lock_hash.insert(key.clone(),VecDeque::new());
+        lock_hash.insert(key.clone(), VecDeque::new());
         for i in 2..parts.len() {
-            lock_hash.get_mut(&key).unwrap().push_back(parts[i].trim_end_matches('\0').to_string());
+            lock_hash
+                .get_mut(&key)
+                .unwrap()
+                .push_back(parts[i].trim_end_matches('\0').to_string());
         }
     }
     socket.write_all("ok".as_bytes()).await.unwrap();
@@ -64,11 +76,14 @@ pub async fn handle_rpush_command(
 pub async fn handle_lpop_command(
     parts: Vec<&str>,
     socket: &mut tokio::net::TcpStream,
-    hash_table: Arc<Mutex<HashMap<String,VecDeque<String>>>>,
+    hash_table: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
 ) {
-    if parts.len() !=2 {
+    if parts.len() != 2 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
     let key = parts[1].trim_end_matches('\0').to_string();
@@ -89,11 +104,14 @@ pub async fn handle_lpop_command(
 pub async fn handle_rpop_command(
     parts: Vec<&str>,
     socket: &mut tokio::net::TcpStream,
-    hash_table: Arc<Mutex<HashMap<String,VecDeque<String>>>>,
+    hash_table: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
 ) {
-    if parts.len() !=2 {
+    if parts.len() != 2 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
     let key = parts[1].trim_end_matches('\0').to_string();
@@ -114,11 +132,14 @@ pub async fn handle_rpop_command(
 pub async fn handle_lrange_command(
     parts: Vec<&str>,
     socket: &mut tokio::net::TcpStream,
-    hash_table: Arc<Mutex<HashMap<String,VecDeque<String>>>>,
+    hash_table: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
 ) {
-    if parts.len() !=4 {
+    if parts.len() != 4 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
     let key = parts[1].trim_end_matches('\0').to_string();
@@ -141,13 +162,12 @@ pub async fn handle_lrange_command(
         let mut res = String::new();
         for i in start..=end {
             if let Some(value) = inner_list.get(i as usize) {
-               let message = format!("{}\n", value);
+                let message = format!("{}\n", value);
                 res.push_str(&message);
             }
         }
         socket.write_all(res.as_bytes()).await.unwrap();
-    }else{
+    } else {
         error!("未找到key");
     }
 }
-

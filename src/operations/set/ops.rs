@@ -1,6 +1,6 @@
+use log::error;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use log::error;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
@@ -12,12 +12,18 @@ pub async fn handle_sadd_command(
 ) {
     if parts.len() <= 2 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
     let key = parts[1].trim_end_matches('\0').to_string();
-    let values: Vec<_> = parts[2..].iter().map(|s| s.trim_end_matches('\0').to_string()).collect();
+    let values: Vec<_> = parts[2..]
+        .iter()
+        .map(|s| s.trim_end_matches('\0').to_string())
+        .collect();
 
     // 获取可变的哈希表锁
     let mut map = storage.lock().await;
@@ -43,7 +49,10 @@ pub async fn handle_sismember_command(
 ) {
     if parts.len() != 3 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
@@ -69,7 +78,10 @@ pub async fn handle_smembers_command(
 ) {
     if parts.len() != 2 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
@@ -93,23 +105,29 @@ pub async fn handle_srem_command(
 ) {
     if parts.len() <= 2 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
     let key = parts[1].trim_end_matches('\0').to_string();
-    let values: Vec<_> = parts[2..].iter().map(|s| s.trim_end_matches('\0').to_string()).collect();
+    let values: Vec<_> = parts[2..]
+        .iter()
+        .map(|s| s.trim_end_matches('\0').to_string())
+        .collect();
     let mut map = storage.lock().await;
     let mut count = 0;
     if let Some(set) = map.get_mut(&key) {
         for value in values {
-            if set.remove(&value){
-                count+=1;
+            if set.remove(&value) {
+                count += 1;
             }
         }
-        let res=format!("删除{}个元素",count);
+        let res = format!("删除{}个元素", count);
         socket.write_all(res.as_bytes()).await.unwrap();
-    }else{
+    } else {
         socket.write_all("未找到key".as_bytes()).await.unwrap();
     }
 }

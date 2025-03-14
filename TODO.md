@@ -3,6 +3,7 @@
     - 示例：`SET name "John Doe"`
 - **获取指令**：`GET <key>`
     - 示例：`GET name` → 返回 `"John Doe"`
+- // TODO 再加一个del指令
 
 ---
 

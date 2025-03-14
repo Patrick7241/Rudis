@@ -16,10 +16,8 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
             // 定义日志的输出格式
             out.finish(format_args!(
                 "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
-                color_line = format_args!(
-                    "\x1B[{}m",
-                    colors.get_color(&record.level()).to_fg_str()
-                ),
+                color_line =
+                    format_args!("\x1B[{}m", colors.get_color(&record.level()).to_fg_str()),
                 date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
                 target = record.target(),
                 level = colors.color(record.level()),

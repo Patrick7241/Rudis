@@ -1,8 +1,8 @@
-use std::fs;
-use serde_yaml;
 use crate::config::config::Config;
+use serde_yaml;
+use std::fs;
 
-pub fn reader() ->Option<Config> {
+pub fn reader() -> Option<Config> {
     // 读取 YAML 文件内容
     let yaml_content = match fs::read_to_string("config.yaml") {
         Ok(content) => content,

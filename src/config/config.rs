@@ -7,5 +7,5 @@ pub struct Config {
 
 #[derive(Debug, Deserialize)]
 pub struct RudisConfig {
-    pub address : String,
+    pub address: String,
 }

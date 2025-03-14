@@ -2,7 +2,6 @@ mod config;
 mod log;
 mod operations;
 
-use skiplist::OrderedSkipList;
 use ::log::{error, info};
 use config::reader::reader;
 use operations::hash::ops::{
@@ -13,18 +12,21 @@ use operations::list::ops::{
     handle_rpush_command,
 };
 use operations::set::ops::{
-    handle_sadd_command,handle_sismember_command,handle_smembers_command,
-    handle_srem_command,
+    handle_sadd_command, handle_sismember_command, handle_smembers_command, handle_srem_command,
+};
+use operations::sorted_set::ops::{
+    handle_zadd_command, handle_zrange_command, handle_zrem_command, handle_zscore_command,
 };
 use operations::string::ops::{
     handle_del_command, handle_get_command, handle_set_command
 };
-use operations::sorted_set::ops::{
-    handle_zadd_command, handle_zrange_command,handle_zrem_command,
-    handle_zscore_command
+use operations::bitmap::ops::{
+    handle_setbit_command,handle_getbit_command,handle_bitcount_command
 };
+use skiplist::OrderedSkipList;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
+use bitvec::prelude::BitVec;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 
@@ -34,8 +36,9 @@ struct Storage {
     hash_storage: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
     list_storage: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
     set_storage: Arc<Mutex<HashMap<String, HashSet<String>>>>,
-    sorted_set_storage: Arc<Mutex<HashMap<String, OrderedSkipList<(f64, String)>>>>,// 跳表
-    hash_sorted_set_storage:Arc<Mutex<HashMap<String,HashMap<String, f64>>>>, // 存储zset的成员分数键值对
+    sorted_set_storage: Arc<Mutex<HashMap<String, OrderedSkipList<(f64, String)>>>>, // 跳表
+    hash_sorted_set_storage: Arc<Mutex<HashMap<String, HashMap<String, f64>>>>, // 存储zset的成员分数键值对
+    bitmap_storage:Arc<Mutex<HashMap<String,BitVec>>>
 }
 
 #[tokio::main]
@@ -81,6 +84,8 @@ async fn main() {
     // hash_sorted_set类型存储
     let hash_table_hash_sorted_set: Arc<Mutex<HashMap<String, HashMap<String, f64>>>> =
         Arc::new(Mutex::new(HashMap::new()));
+    let hash_bitmap_storage: Arc<Mutex<HashMap<String,BitVec>>> =
+        Arc::new(Mutex::new(HashMap::new()));
     let storage = Storage {
         string_storage: hash_table_string,
         hash_storage: hash_table_hash,
@@ -88,6 +93,7 @@ async fn main() {
         set_storage: hash_table_set,
         sorted_set_storage: hash_table_sorted_set,
         hash_sorted_set_storage: hash_table_hash_sorted_set,
+        bitmap_storage: hash_bitmap_storage,
     };
 
     loop {
@@ -95,7 +101,6 @@ async fn main() {
         info!("接受 {} 地址的连接", addr);
 
         let storage = storage.clone();
-
 
         tokio::spawn(async move {
             handle_client(&mut socket, storage).await;
@@ -120,6 +125,10 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
                 let parts: Vec<&str> = command.split_whitespace().collect();
 
                 match parts.get(0) {
+                    // 帮助
+                    Some(&"help")=>{
+                        operations::help::help::help(socket).await;
+                    }
                     // string类型
                     Some(&"set") => {
                         handle_set_command(parts, socket, storage.string_storage.clone()).await
@@ -178,20 +187,64 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
 
                     // sorted_set类型
                     Some(&"zadd") => {
-                        handle_zadd_command(parts, socket, storage.sorted_set_storage.clone(),storage.hash_sorted_set_storage.clone()).await
+                        handle_zadd_command(
+                            parts,
+                            socket,
+                            storage.sorted_set_storage.clone(),
+                            storage.hash_sorted_set_storage.clone(),
+                        )
+                        .await
                     }
-                    Some(&"zrange")=>{
-                        handle_zrange_command(parts, socket, storage.sorted_set_storage.clone()).await
+                    Some(&"zrange") => {
+                        handle_zrange_command(parts, socket, storage.sorted_set_storage.clone())
+                            .await
                     }
-                    Some(&"zrem")=>{
-                        handle_zrem_command(parts, socket, storage.sorted_set_storage.clone(),storage.hash_sorted_set_storage.clone()).await
+                    Some(&"zrem") => {
+                        handle_zrem_command(
+                            parts,
+                            socket,
+                            storage.sorted_set_storage.clone(),
+                            storage.hash_sorted_set_storage.clone(),
+                        )
+                        .await
                     }
-                    Some(&"zscore")=>{
-                        handle_zscore_command(parts, socket, storage.hash_sorted_set_storage.clone()).await
+                    Some(&"zscore") => {
+                        handle_zscore_command(
+                            parts,
+                            socket,
+                            storage.hash_sorted_set_storage.clone(),
+                        )
+                        .await
+                    }
+
+                    // bitmap类型
+                    Some(&"setbit")=>{
+                        handle_setbit_command(
+                            parts,
+                            socket,
+                            storage.bitmap_storage.clone(),
+                        )
+                            .await
+                    }
+                    Some(&"getbit")=>{
+                        handle_getbit_command(
+                            parts,
+                            socket,
+                            storage.bitmap_storage.clone(),
+                        )
+                            .await
+                    }
+                    Some(&"bitcount")=>{
+                        handle_bitcount_command(
+                            parts,
+                            socket,
+                            storage.bitmap_storage.clone(),
+                        )
+                            .await
                     }
                     _ => {
-                        error!("未定义的指令类型");
                         let response = "未定义的指令类型";
+                        error!("{}",response);
                         socket.write_all(response.as_bytes()).await.unwrap();
                     }
                 }

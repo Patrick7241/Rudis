@@ -1,6 +1,6 @@
+use log::error;
 use std::collections::HashMap;
 use std::sync::Arc;
-use log::error;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
@@ -35,7 +35,10 @@ pub async fn handle_hset_command(
 ) {
     if parts.len() <= 3 || parts.len() % 2 != 0 {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
@@ -63,9 +66,12 @@ pub async fn handle_hget_command(
     socket: &mut tokio::net::TcpStream,
     hash_table: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
 ) {
-    if!check_command_format(&parts, 3) {
+    if !check_command_format(&parts, 3) {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
@@ -86,9 +92,12 @@ pub async fn handle_hdel_command(
     socket: &mut tokio::net::TcpStream,
     hash_table: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
 ) {
-    if!check_command_format(&parts, 3) {
+    if !check_command_format(&parts, 3) {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
@@ -114,9 +123,12 @@ pub async fn handle_hgetall_command(
     socket: &mut tokio::net::TcpStream,
     hash_table: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
 ) {
-    if!check_command_format(&parts, 2) {
+    if !check_command_format(&parts, 2) {
         error!("命令格式不符合！");
-        socket.write_all("命令格式不符合！".as_bytes()).await.unwrap();
+        socket
+            .write_all("命令格式不符合！".as_bytes())
+            .await
+            .unwrap();
         return;
     }
 
