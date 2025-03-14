@@ -2,6 +2,7 @@ mod config;
 mod log;
 mod operations;
 
+use skiplist::OrderedSkipList;
 use ::log::{error, info};
 use config::reader::reader;
 use operations::hash::ops::{
@@ -15,7 +16,13 @@ use operations::set::ops::{
     handle_sadd_command,handle_sismember_command,handle_smembers_command,
     handle_srem_command,
 };
-use operations::string::ops::{handle_del_command, handle_get_command, handle_set_command};
+use operations::string::ops::{
+    handle_del_command, handle_get_command, handle_set_command
+};
+use operations::sorted_set::ops::{
+    handle_zadd_command, handle_zrange_command,handle_zrem_command,
+    handle_zscore_command
+};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -27,6 +34,8 @@ struct Storage {
     hash_storage: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
     list_storage: Arc<Mutex<HashMap<String, VecDeque<String>>>>,
     set_storage: Arc<Mutex<HashMap<String, HashSet<String>>>>,
+    sorted_set_storage: Arc<Mutex<HashMap<String, OrderedSkipList<(f64, String)>>>>,// 跳表
+    hash_sorted_set_storage:Arc<Mutex<HashMap<String,HashMap<String, f64>>>>, // 存储zset的成员分数键值对
 }
 
 #[tokio::main]
@@ -66,11 +75,19 @@ async fn main() {
     // set类型存储
     let hash_table_set: Arc<Mutex<HashMap<String, HashSet<String>>>> =
         Arc::new(Mutex::new(HashMap::new()));
+    // sorted_set类型存储
+    let hash_table_sorted_set: Arc<Mutex<HashMap<String, OrderedSkipList<(f64, String)>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+    // hash_sorted_set类型存储
+    let hash_table_hash_sorted_set: Arc<Mutex<HashMap<String, HashMap<String, f64>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
     let storage = Storage {
         string_storage: hash_table_string,
         hash_storage: hash_table_hash,
         list_storage: hash_table_list,
         set_storage: hash_table_set,
+        sorted_set_storage: hash_table_sorted_set,
+        hash_sorted_set_storage: hash_table_hash_sorted_set,
     };
 
     loop {
@@ -78,6 +95,7 @@ async fn main() {
         info!("接受 {} 地址的连接", addr);
 
         let storage = storage.clone();
+
 
         tokio::spawn(async move {
             handle_client(&mut socket, storage).await;
@@ -156,6 +174,20 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
                     }
                     Some(&"srem") => {
                         handle_srem_command(parts, socket, storage.set_storage.clone()).await
+                    }
+
+                    // sorted_set类型
+                    Some(&"zadd") => {
+                        handle_zadd_command(parts, socket, storage.sorted_set_storage.clone(),storage.hash_sorted_set_storage.clone()).await
+                    }
+                    Some(&"zrange")=>{
+                        handle_zrange_command(parts, socket, storage.sorted_set_storage.clone()).await
+                    }
+                    Some(&"zrem")=>{
+                        handle_zrem_command(parts, socket, storage.sorted_set_storage.clone(),storage.hash_sorted_set_storage.clone()).await
+                    }
+                    Some(&"zscore")=>{
+                        handle_zscore_command(parts, socket, storage.hash_sorted_set_storage.clone()).await
                     }
                     _ => {
                         error!("未定义的指令类型");
