@@ -24,8 +24,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        // 发送命令到服务器
-        stream.write_all(command.as_bytes()).await?;
+        // 转换命令为 RESP 格式
+        let resp_command = to_resp_format(&command);
+
+        // 发送 RESP 格式的命令到服务器
+        stream.write_all(resp_command.as_bytes()).await?;
 
         // 接收服务器的响应
         let mut buffer = [0; 1024];
@@ -37,4 +40,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+// 将用户输入转换为 RESP 格式（处理二进制数据）√
+fn to_resp_format(command: &str) -> String {
+    let parts: Vec<&str> = command.split(' ').collect(); // 严格按空格拆分
+    let mut resp = format!("*{}\r\n", parts.len()); // 数组大小
+
+    for part in parts {
+        resp.push_str(&format!("${}\r\n{}\r\n", part.as_bytes().len(), part));
+    }
+    resp
 }

@@ -1,4 +1,3 @@
 # Rudis
 
-## Overview
-rust编写的丐版redis，简称rudis
+移步 [https://github.com/Patrick7241/p-rudis](https://github.com/Patrick7241/p-rudis)

@@ -16,7 +16,6 @@
     - 示例：`HGETALL user:1` → 返回 `["name", "John", "age", "30"]`
 
 ---
-
 ### 3. **List（列表）**
 - **从左侧插入元素**：`LPUSH <key> <value>`
     - 示例：`LPUSH mylist "item1" "item2"`

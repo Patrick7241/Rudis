@@ -121,133 +121,136 @@ async fn handle_client(socket: &mut tokio::net::TcpStream, storage: Storage) {
                 let command = String::from_utf8_lossy(&buffer[..]);
                 let command = command.to_lowercase();
 
-                // 分割命令字符串
-                let parts: Vec<&str> = command.split_whitespace().collect();
+                println!("{}", command);
+                return;
 
-                match parts.get(0) {
-                    // 帮助
-                    Some(&"help")=>{
-                        operations::help::help::help(socket).await;
-                    }
-                    // string类型
-                    Some(&"set") => {
-                        handle_set_command(parts, socket, storage.string_storage.clone()).await
-                    }
-                    Some(&"get") => {
-                        handle_get_command(parts, socket, storage.string_storage.clone()).await
-                    }
-                    Some(&"del") => {
-                        handle_del_command(parts, socket, storage.string_storage.clone()).await
-                    }
-
-                    // hash类型
-                    Some(&"hset") => {
-                        handle_hset_command(parts, socket, storage.hash_storage.clone()).await
-                    }
-                    Some(&"hget") => {
-                        handle_hget_command(parts, socket, storage.hash_storage.clone()).await
-                    }
-                    Some(&"hdel") => {
-                        handle_hdel_command(parts, socket, storage.hash_storage.clone()).await
-                    }
-                    Some(&"hgetall") => {
-                        handle_hgetall_command(parts, socket, storage.hash_storage.clone()).await
-                    }
-
-                    // list类型
-                    Some(&"lpush") => {
-                        handle_lpush_command(parts, socket, storage.list_storage.clone()).await
-                    }
-                    Some(&"rpush") => {
-                        handle_rpush_command(parts, socket, storage.list_storage.clone()).await
-                    }
-                    Some(&"lpop") => {
-                        handle_lpop_command(parts, socket, storage.list_storage.clone()).await
-                    }
-                    Some(&"rpop") => {
-                        handle_rpop_command(parts, socket, storage.list_storage.clone()).await
-                    }
-                    Some(&"lrange") => {
-                        handle_lrange_command(parts, socket, storage.list_storage.clone()).await
-                    }
-
-                    // set类型
-                    Some(&"sadd") => {
-                        handle_sadd_command(parts, socket, storage.set_storage.clone()).await
-                    }
-                    Some(&"sismember") => {
-                        handle_sismember_command(parts, socket, storage.set_storage.clone()).await
-                    }
-                    Some(&"smembers") => {
-                        handle_smembers_command(parts, socket, storage.set_storage.clone()).await
-                    }
-                    Some(&"srem") => {
-                        handle_srem_command(parts, socket, storage.set_storage.clone()).await
-                    }
-
-                    // sorted_set类型
-                    Some(&"zadd") => {
-                        handle_zadd_command(
-                            parts,
-                            socket,
-                            storage.sorted_set_storage.clone(),
-                            storage.hash_sorted_set_storage.clone(),
-                        )
-                        .await
-                    }
-                    Some(&"zrange") => {
-                        handle_zrange_command(parts, socket, storage.sorted_set_storage.clone())
-                            .await
-                    }
-                    Some(&"zrem") => {
-                        handle_zrem_command(
-                            parts,
-                            socket,
-                            storage.sorted_set_storage.clone(),
-                            storage.hash_sorted_set_storage.clone(),
-                        )
-                        .await
-                    }
-                    Some(&"zscore") => {
-                        handle_zscore_command(
-                            parts,
-                            socket,
-                            storage.hash_sorted_set_storage.clone(),
-                        )
-                        .await
-                    }
-
-                    // bitmap类型
-                    Some(&"setbit")=>{
-                        handle_setbit_command(
-                            parts,
-                            socket,
-                            storage.bitmap_storage.clone(),
-                        )
-                            .await
-                    }
-                    Some(&"getbit")=>{
-                        handle_getbit_command(
-                            parts,
-                            socket,
-                            storage.bitmap_storage.clone(),
-                        )
-                            .await
-                    }
-                    Some(&"bitcount")=>{
-                        handle_bitcount_command(
-                            parts,
-                            socket,
-                            storage.bitmap_storage.clone(),
-                        )
-                            .await
-                    }
-                    _ => {
-                        let response = "未定义的指令类型";
-                        error!("{}",response);
-                        socket.write_all(response.as_bytes()).await.unwrap();
-                    }
-                }
+                // // 分割命令字符串
+                // let parts: Vec<&str> = command.split_whitespace().collect();
+                //
+                // match parts.get(0) {
+                //     // 帮助
+                //     Some(&"help")=>{
+                //         operations::help::help::help(socket).await;
+                //     }
+                //     // string类型
+                //     Some(&"set") => {
+                //         handle_set_command(parts, socket, storage.string_storage.clone()).await
+                //     }
+                //     Some(&"get") => {
+                //         handle_get_command(parts, socket, storage.string_storage.clone()).await
+                //     }
+                //     Some(&"del") => {
+                //         handle_del_command(parts, socket, storage.string_storage.clone()).await
+                //     }
+                //
+                //     // hash类型
+                //     Some(&"hset") => {
+                //         handle_hset_command(parts, socket, storage.hash_storage.clone()).await
+                //     }
+                //     Some(&"hget") => {
+                //         handle_hget_command(parts, socket, storage.hash_storage.clone()).await
+                //     }
+                //     Some(&"hdel") => {
+                //         handle_hdel_command(parts, socket, storage.hash_storage.clone()).await
+                //     }
+                //     Some(&"hgetall") => {
+                //         handle_hgetall_command(parts, socket, storage.hash_storage.clone()).await
+                //     }
+                //
+                //     // list类型
+                //     Some(&"lpush") => {
+                //         handle_lpush_command(parts, socket, storage.list_storage.clone()).await
+                //     }
+                //     Some(&"rpush") => {
+                //         handle_rpush_command(parts, socket, storage.list_storage.clone()).await
+                //     }
+                //     Some(&"lpop") => {
+                //         handle_lpop_command(parts, socket, storage.list_storage.clone()).await
+                //     }
+                //     Some(&"rpop") => {
+                //         handle_rpop_command(parts, socket, storage.list_storage.clone()).await
+                //     }
+                //     Some(&"lrange") => {
+                //         handle_lrange_command(parts, socket, storage.list_storage.clone()).await
+                //     }
+                //
+                //     // set类型
+                //     Some(&"sadd") => {
+                //         handle_sadd_command(parts, socket, storage.set_storage.clone()).await
+                //     }
+                //     Some(&"sismember") => {
+                //         handle_sismember_command(parts, socket, storage.set_storage.clone()).await
+                //     }
+                //     Some(&"smembers") => {
+                //         handle_smembers_command(parts, socket, storage.set_storage.clone()).await
+                //     }
+                //     Some(&"srem") => {
+                //         handle_srem_command(parts, socket, storage.set_storage.clone()).await
+                //     }
+                //
+                //     // sorted_set类型
+                //     Some(&"zadd") => {
+                //         handle_zadd_command(
+                //             parts,
+                //             socket,
+                //             storage.sorted_set_storage.clone(),
+                //             storage.hash_sorted_set_storage.clone(),
+                //         )
+                //         .await
+                //     }
+                //     Some(&"zrange") => {
+                //         handle_zrange_command(parts, socket, storage.sorted_set_storage.clone())
+                //             .await
+                //     }
+                //     Some(&"zrem") => {
+                //         handle_zrem_command(
+                //             parts,
+                //             socket,
+                //             storage.sorted_set_storage.clone(),
+                //             storage.hash_sorted_set_storage.clone(),
+                //         )
+                //         .await
+                //     }
+                //     Some(&"zscore") => {
+                //         handle_zscore_command(
+                //             parts,
+                //             socket,
+                //             storage.hash_sorted_set_storage.clone(),
+                //         )
+                //         .await
+                //     }
+                //
+                //     // bitmap类型
+                //     Some(&"setbit")=>{
+                //         handle_setbit_command(
+                //             parts,
+                //             socket,
+                //             storage.bitmap_storage.clone(),
+                //         )
+                //             .await
+                //     }
+                //     Some(&"getbit")=>{
+                //         handle_getbit_command(
+                //             parts,
+                //             socket,
+                //             storage.bitmap_storage.clone(),
+                //         )
+                //             .await
+                //     }
+                //     Some(&"bitcount")=>{
+                //         handle_bitcount_command(
+                //             parts,
+                //             socket,
+                //             storage.bitmap_storage.clone(),
+                //         )
+                //             .await
+                //     }
+                //     _ => {
+                //         let response = "未定义的指令类型";
+                //         error!("{}",response);
+                //         socket.write_all(response.as_bytes()).await.unwrap();
+                //     }
+                // }
             }
             Err(e) => {
                 error!("从服务端读取消息失败,{}", e);
